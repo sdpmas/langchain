@@ -1,5 +1,6 @@
 """Math utils."""
 from typing import List, Optional, Tuple, Union
+from math import sqrt
 
 import numpy as np
 
@@ -54,3 +55,12 @@ def cosine_similarity_top_k(
     ret_idxs = [(x // score_array.shape[1], x % score_array.shape[1]) for x in top_idxs]
     scores = score_array.flatten()[top_idxs].tolist()
     return ret_idxs, scores
+
+def euclidean_distance(vector1: List[float], vector2: List[float]) -> float:
+    """Compute the Euclidean distance between two vectors."""
+    if len(vector1) != len(vector2):
+        raise ValueError(
+            f"Length of vector1 and vector2 must be the same. vector1 has length {len(vector1)} "
+            f"and vector2 has length {len(vector2)}."
+        )
+    return sqrt(sum((v1 - v2) ** 2 for v1, v2 in zip(vector1, vector2)))

@@ -2,8 +2,10 @@
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
+import math
 
 Matrix = Union[List[List[float]], List[np.ndarray], np.ndarray]
+Vector = List[float]
 
 
 def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
@@ -54,3 +56,19 @@ def cosine_similarity_top_k(
     ret_idxs = [(x // score_array.shape[1], x % score_array.shape[1]) for x in top_idxs]
     scores = score_array.flatten()[top_idxs].tolist()
     return ret_idxs, scores
+
+
+def euclidean_distance(vector1: Vector, vector2: Vector) -> float:
+    """Compute the Euclidean distance between two vectors.
+
+    Args:
+        vector1: First vector.
+        vector2: Second vector.
+
+    Returns:
+        Euclidean distance between the two vectors.
+    """
+    if len(vector1) != len(vector2):
+        raise ValueError("Vectors must be of the same length.")
+
+    return math.sqrt(sum((v1 - v2)**2 for v1, v2 in zip(vector1, vector2)))

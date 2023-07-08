@@ -1,4 +1,3 @@
-"""Math utils."""
 from typing import List, Optional, Tuple, Union
 from math import sqrt
 
@@ -8,7 +7,6 @@ Matrix = Union[List[List[float]], List[np.ndarray], np.ndarray]
 
 
 def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
-    """Row-wise cosine similarity between two equal-width matrices."""
     if len(X) == 0 or len(Y) == 0:
         return np.array([])
     X = np.array(X)
@@ -32,18 +30,6 @@ def cosine_similarity_top_k(
     top_k: Optional[int] = 5,
     score_threshold: Optional[float] = None,
 ) -> Tuple[List[Tuple[int, int]], List[float]]:
-    """Row-wise cosine similarity with optional top-k and score threshold filtering.
-
-    Args:
-        X: Matrix.
-        Y: Matrix, same width as X.
-        top_k: Max number of results to return.
-        score_threshold: Minimum cosine similarity of results.
-
-    Returns:
-        Tuple of two lists. First contains two-tuples of indices (X_idx, Y_idx),
-            second contains corresponding cosine similarities.
-    """
     if len(X) == 0 or len(Y) == 0:
         return [], []
     score_array = cosine_similarity(X, Y)
@@ -58,13 +44,4 @@ def cosine_similarity_top_k(
 
 
 def euclidean_distance(point1: Tuple[float, float], point2: Tuple[float, float]) -> float:
-    """Calculate Euclidean distance between two points.
-
-    Args:
-        point1: A tuple representing the coordinates of the first point.
-        point2: A tuple representing the coordinates of the second point.
-
-    Returns:
-        The Euclidean distance between the two points.
-    """
     return sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)

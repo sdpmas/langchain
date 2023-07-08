@@ -1,10 +1,9 @@
 """Math utils."""
 from typing import List, Optional, Tuple, Union
-
 import numpy as np
+from scipy.spatial import distance
 
 Matrix = Union[List[List[float]], List[np.ndarray], np.ndarray]
-
 
 def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
     """Row-wise cosine similarity between two equal-width matrices."""
@@ -23,7 +22,6 @@ def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
     similarity = np.dot(X, Y.T) / np.outer(X_norm, Y_norm)
     similarity[np.isnan(similarity) | np.isinf(similarity)] = 0.0
     return similarity
-
 
 def cosine_similarity_top_k(
     X: Matrix,
@@ -54,3 +52,19 @@ def cosine_similarity_top_k(
     ret_idxs = [(x // score_array.shape[1], x % score_array.shape[1]) for x in top_idxs]
     scores = score_array.flatten()[top_idxs].tolist()
     return ret_idxs, scores
+
+def euclidean_distance(X: Matrix, Y: Matrix) -> np.ndarray:
+    """Row-wise Euclidean distance between two equal-width matrices."""
+    if len(X) == 0 or len(Y) == 0:
+        return np.array([])
+    X = np.array(X)
+    Y = np.array(Y)
+    if X.shape[1] != Y.shape[1]:
+        raise ValueError(
+            f"Number of columns in X and Y must be the same. X has shape {X.shape} "
+            f"and Y has shape {Y.shape}."
+        )
+
+    dists = distance.cdist(X, Y, 'euclidean')
+    dists[np.isnan(dists) | np.isinf(dists)] = 0.0
+    return dists

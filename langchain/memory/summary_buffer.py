@@ -58,7 +58,8 @@ class ConversationSummaryBufferMemory(BaseChatMemory, SummarizerMixin):
         """Save context from this conversation to buffer."""
         super().save_context(inputs, outputs)
         if 'system' in inputs:
-            self.chat_memory.messages.insert(0, SystemMessage(content=inputs['system']))
+            system_message = SystemMessage(content=inputs['system'])
+            self.chat_memory.messages.insert(0, system_message)
         self.prune()
 
     def prune(self) -> None:

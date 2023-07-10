@@ -51,3 +51,9 @@ class ConversationTokenBufferMemory(BaseChatMemory):
             while curr_buffer_length > self.max_token_limit:
                 pruned_memory.append(buffer.pop(0))
                 curr_buffer_length = self.llm.get_num_tokens_from_messages(buffer)
+
+        # Filter out system messages from pruned_memory
+        pruned_memory = [message for message in pruned_memory if message.role != 'system']
+
+        # Update chat_memory with pruned_memory without system messages
+        self.chat_memory.messages = pruned_memory

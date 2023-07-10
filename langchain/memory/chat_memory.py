@@ -32,8 +32,10 @@ class BaseChatMemory(BaseMemory, ABC):
     def save_context(self, inputs: Dict[str, Any], outputs: Dict[str, str]) -> None:
         """Save context from this conversation to buffer."""
         input_str, output_str = self._get_input_output(inputs, outputs)
-        self.chat_memory.add_user_message(input_str)
-        self.chat_memory.add_ai_message(output_str)
+        if 'system' not in input_str:
+            self.chat_memory.add_user_message(input_str)
+        if 'system' not in output_str:
+            self.chat_memory.add_ai_message(output_str)
 
     def clear(self) -> None:
         """Clear memory contents."""

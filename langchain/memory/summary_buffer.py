@@ -4,7 +4,7 @@ from pydantic import root_validator
 
 from langchain.memory.chat_memory import BaseChatMemory
 from langchain.memory.summary import SummarizerMixin
-from langchain.schema.messages import BaseMessage, get_buffer_string
+from langchain.schema.messages import BaseMessage, get_buffer_string, SystemMessage
 
 
 class ConversationSummaryBufferMemory(BaseChatMemory, SummarizerMixin):
@@ -31,7 +31,7 @@ class ConversationSummaryBufferMemory(BaseChatMemory, SummarizerMixin):
         buffer = self.buffer
         if self.moving_summary_buffer != "":
             first_messages: List[BaseMessage] = [
-                self.summary_message_cls(content=self.moving_summary_buffer)
+                SystemMessage(content=self.moving_summary_buffer)
             ]
             buffer = first_messages + buffer
         if self.return_messages:
@@ -57,6 +57,8 @@ class ConversationSummaryBufferMemory(BaseChatMemory, SummarizerMixin):
     def save_context(self, inputs: Dict[str, Any], outputs: Dict[str, str]) -> None:
         """Save context from this conversation to buffer."""
         super().save_context(inputs, outputs)
+        if 'system' in inputs:
+            self.chat_memory.messages.insert(0, SystemMessage(content=inputs['system']))
         self.prune()
 
     def prune(self) -> None:

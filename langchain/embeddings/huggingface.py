@@ -1,5 +1,7 @@
 """Wrapper around HuggingFace embedding models."""
 from typing import Any, Dict, List, Optional
+import sentence_transformers
+from InstructorEmbedding import INSTRUCTOR
 
 from pydantic import BaseModel, Extra, Field
 
@@ -52,9 +54,6 @@ class HuggingFaceEmbeddings(BaseModel, Embeddings):
         """Initialize the sentence_transformer."""
         super().__init__(**kwargs)
         try:
-            import sentence_transformers
-            from InstructorEmbedding import INSTRUCTOR
-
             if self.model_name == DEFAULT_INSTRUCT_MODEL:
                 self.client = INSTRUCTOR(
                     self.model_name, cache_folder=self.cache_folder, **self.model_kwargs

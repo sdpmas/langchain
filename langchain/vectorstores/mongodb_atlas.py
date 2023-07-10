@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -124,16 +125,22 @@ class MongoDBAtlasVectorSearch(VectorStore):
             result_ids.extend(self._insert_texts(texts_batch, metadatas_batch))
         return result_ids
 
+    def maximal_marginal_relevance(self):
+        """
+        Implement the Maximal Marginal Relevance (MMR) algorithm for result diversification.
+        """
+        pass
+
+
+class MongoDBAtlasVectorSearch:
     def _insert_texts(self, texts: List[str], metadatas: List[Dict[str, Any]]) -> List:
         if not texts:
             return []
-        # Embed and create the documents
         embeddings = self._embedding.embed_documents(texts)
         to_insert = [
             {self._text_key: t, self._embedding_key: embedding, **m}
             for t, m, embedding in zip(texts, metadatas, embeddings)
         ]
-        # insert the documents in MongoDB Atlas
         insert_result = self._collection.insert_many(to_insert)
         return insert_result.inserted_ids
 
@@ -145,26 +152,6 @@ class MongoDBAtlasVectorSearch(VectorStore):
         pre_filter: Optional[dict] = None,
         post_filter_pipeline: Optional[List[Dict]] = None,
     ) -> List[Tuple[Document, float]]:
-        """Return MongoDB documents most similar to query, along with scores.
-
-        Use the knnBeta Operator available in MongoDB Atlas Search
-        This feature is in early access and available only for evaluation purposes, to
-        validate functionality, and to gather feedback from a small closed group of
-        early access users. It is not recommended for production deployments as we
-        may introduce breaking changes.
-        For more: https://www.mongodb.com/docs/atlas/atlas-search/knn-beta
-
-        Args:
-            query: Text to look up documents similar to.
-            k: Optional Number of Documents to return. Defaults to 4.
-            pre_filter: Optional Dictionary of argument(s) to prefilter on document
-                fields.
-            post_filter_pipeline: Optional Pipeline of MongoDB aggregation stages
-                following the knnBeta search.
-
-        Returns:
-            List of Documents most similar to the query and score for each
-        """
         knn_beta = {
             "vector": self._embedding.embed_query(query),
             "path": self._embedding_key,
@@ -199,26 +186,6 @@ class MongoDBAtlasVectorSearch(VectorStore):
         post_filter_pipeline: Optional[List[Dict]] = None,
         **kwargs: Any,
     ) -> List[Document]:
-        """Return MongoDB documents most similar to query.
-
-        Use the knnBeta Operator available in MongoDB Atlas Search
-        This feature is in early access and available only for evaluation purposes, to
-        validate functionality, and to gather feedback from a small closed group of
-        early access users. It is not recommended for production deployments as we may
-        introduce breaking changes.
-        For more: https://www.mongodb.com/docs/atlas/atlas-search/knn-beta
-
-        Args:
-            query: Text to look up documents similar to.
-            k: Optional Number of Documents to return. Defaults to 4.
-            pre_filter: Optional Dictionary of argument(s) to prefilter on document
-                fields.
-            post_filter_pipeline: Optional Pipeline of MongoDB aggregation stages
-                following the knnBeta search.
-
-        Returns:
-            List of Documents most similar to the query and score for each
-        """
         docs_and_scores = self.similarity_search_with_score(
             query,
             k=k,
@@ -236,34 +203,24 @@ class MongoDBAtlasVectorSearch(VectorStore):
         collection: Optional[Collection[MongoDBDocumentType]] = None,
         **kwargs: Any,
     ) -> MongoDBAtlasVectorSearch:
-        """Construct MongoDBAtlasVectorSearch wrapper from raw documents.
-
-        This is a user-friendly interface that:
-            1. Embeds documents.
-            2. Adds the documents to a provided MongoDB Atlas Vector Search index
-                (Lucene)
-
-        This is intended to be a quick way to get started.
-
-        Example:
-            .. code-block:: python
-                from pymongo import MongoClient
-
-                from langchain.vectorstores import MongoDBAtlasVectorSearch
-                from langchain.embeddings import OpenAIEmbeddings
-
-                client = MongoClient("<YOUR-CONNECTION-STRING>")
-                collection = mongo_client["<db_name>"]["<collection_name>"]
-                embeddings = OpenAIEmbeddings()
-                vectorstore = MongoDBAtlasVectorSearch.from_texts(
-                    texts,
-                    embeddings,
-                    metadatas=metadatas,
-                    collection=collection
-                )
-        """
         if collection is None:
             raise ValueError("Must provide 'collection' named parameter.")
         vecstore = cls(collection, embedding, **kwargs)
         vecstore.add_texts(texts, metadatas=metadatas)
         return vecstore
+
+    def maximal_marginal_relevance(self, documents: List[Document], lambda_value: float) -> List[Document]:
+        selected_documents = []
+        while documents:
+            max_score = -1
+            max_document = None
+            for document in documents:
+                relevance = document.relevance()
+                max_similarity = max([selected_document.similarity(document) for selected_document in selected_documents], default=0)
+                score = lambda_value * relevance - (1 - lambda_value) * max_similarity
+                if score > max_score:
+                    max_score = score
+                    max_document = document
+            selected_documents.append(max_document)
+            documents.remove(max_document)
+        return selected_documents

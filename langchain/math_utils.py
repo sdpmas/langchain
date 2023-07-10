@@ -54,3 +54,17 @@ def cosine_similarity_top_k(
     ret_idxs = [(x // score_array.shape[1], x % score_array.shape[1]) for x in top_idxs]
     scores = score_array.flatten()[top_idxs].tolist()
     return ret_idxs, scores
+
+
+def euclidean_distance(point1: Union[List[float], np.ndarray], point2: Union[List[float], np.ndarray]) -> float:
+    """Calculate the Euclidean distance between two points.
+
+    Args:
+        point1: The first point.
+        point2: The second point.
+
+    Returns:
+        The Euclidean distance between the two points.
+    """
+    point1, point2 = np.array(point1), np.array(point2)
+    return np.linalg.norm(point1 - point2)

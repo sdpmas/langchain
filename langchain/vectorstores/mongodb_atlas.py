@@ -273,3 +273,5 @@ class MongoDBAtlasVectorSearch(VectorStore):
         vecstore = cls(collection, embedding, **kwargs)
         vecstore.add_texts(texts, metadatas=metadatas)
         return vecstore
+ts(texts, metadatas=metadatas)
+        return vecstore

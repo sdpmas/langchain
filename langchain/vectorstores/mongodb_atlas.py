@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -123,6 +124,20 @@ class MongoDBAtlasVectorSearch(VectorStore):
         if texts_batch:
             result_ids.extend(self._insert_texts(texts_batch, metadatas_batch))
         return result_ids
+
+    def maximal_marginal_relevance(self, documents: List[Document], scores: List[float]) -> List[Document]:
+        """Implement the Maximal Marginal Relevance (MMR) algorithm for query results.
+
+        Args:
+            documents: List of documents.
+            scores: List of scores.
+
+        Returns:
+            List of documents sorted according to the MMR algorithm.
+        """
+        # TODO: Implement the MMR algorithm
+        pass
+
 
     def _insert_texts(self, texts: List[str], metadatas: List[Dict[str, Any]]) -> List:
         if not texts:

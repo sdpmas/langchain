@@ -55,6 +55,7 @@ class HuggingFaceEmbeddings(BaseModel, Embeddings):
             import sentence_transformers
             from InstructorEmbedding import INSTRUCTOR
 
+            # Depending on the model name, we either instantiate the InstructorEmbedding or the SentenceTransformer
             if self.model_name == DEFAULT_INSTRUCT_MODEL:
                 self.client = INSTRUCTOR(
                     self.model_name, cache_folder=self.cache_folder, **self.model_kwargs

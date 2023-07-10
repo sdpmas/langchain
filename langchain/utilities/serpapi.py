@@ -1,12 +1,13 @@
-"""Chain that calls SerpAPI.
+"""Chain that calls Google Search.
 
 Heavily borrowed from https://github.com/ofirpress/self-ask
 """
 import os
 import sys
+import requests
 from typing import Any, Dict, Optional, Tuple
+from bs4 import BeautifulSoup
 
-import aiohttp
 from pydantic import BaseModel, Extra, Field, root_validator
 
 from langchain.utils import get_from_dict_or_env
@@ -26,21 +27,9 @@ class HiddenPrints:
         sys.stdout = self._original_stdout
 
 
-class SerpAPIWrapper(BaseModel):
-    """Wrapper around SerpAPI.
+class GoogleSearchWrapper(BaseModel):
+    """Wrapper around Google Search."""
 
-    To use, you should have the ``google-search-results`` python package installed,
-    and the environment variable ``SERPAPI_API_KEY`` set with your API key, or pass
-    `serpapi_api_key` as a named parameter to the constructor.
-
-    Example:
-        .. code-block:: python
-
-            from langchain.utilities import SerpAPIWrapper
-            serpapi = SerpAPIWrapper()
-    """
-
-    search_engine: Any  #: :meta private:
     params: dict = Field(
         default={
             "engine": "google",
@@ -49,8 +38,6 @@ class SerpAPIWrapper(BaseModel):
             "hl": "en",
         }
     )
-    serpapi_api_key: Optional[str] = None
-    aiosession: Optional[aiohttp.ClientSession] = None
 
     class Config:
         """Configuration for this pydantic object."""
@@ -58,108 +45,37 @@ class SerpAPIWrapper(BaseModel):
         extra = Extra.forbid
         arbitrary_types_allowed = True
 
-    @root_validator()
-    def validate_environment(cls, values: Dict) -> Dict:
-        """Validate that api key and python package exists in environment."""
-        serpapi_api_key = get_from_dict_or_env(
-            values, "serpapi_api_key", "SERPAPI_API_KEY"
-        )
-        values["serpapi_api_key"] = serpapi_api_key
-        try:
-            from serpapi import GoogleSearch
-
-            values["search_engine"] = GoogleSearch
-        except ImportError:
-            raise ValueError(
-                "Could not import serpapi python package. "
-                "Please install it with `pip install google-search-results`."
-            )
-        return values
-
-    async def arun(self, query: str, **kwargs: Any) -> str:
-        """Run query through SerpAPI and parse result async."""
-        return self._process_response(await self.aresults(query))
-
     def run(self, query: str, **kwargs: Any) -> str:
-        """Run query through SerpAPI and parse result."""
+        """Run query through Google Search and parse result."""
         return self._process_response(self.results(query))
 
     def results(self, query: str) -> dict:
-        """Run query through SerpAPI and return the raw result."""
+        """Run query through Google Search and return the raw result."""
         params = self.get_params(query)
         with HiddenPrints():
-            search = self.search_engine(params)
-            res = search.get_dict()
-        return res
-
-    async def aresults(self, query: str) -> dict:
-        """Use aiohttp to run query through SerpAPI and return the results async."""
-
-        def construct_url_and_params() -> Tuple[str, Dict[str, str]]:
-            params = self.get_params(query)
-            params["source"] = "python"
-            if self.serpapi_api_key:
-                params["serp_api_key"] = self.serpapi_api_key
-            params["output"] = "json"
-            url = "https://serpapi.com/search"
-            return url, params
-
-        url, params = construct_url_and_params()
-        if not self.aiosession:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, params=params) as response:
-                    res = await response.json()
-        else:
-            async with self.aiosession.get(url, params=params) as response:
-                res = await response.json()
-
-        return res
+            res = requests.get('https://www.google.com/search', params=params)
+            soup = BeautifulSoup(res.text, 'html.parser')
+        return soup
 
     def get_params(self, query: str) -> Dict[str, str]:
-        """Get parameters for SerpAPI."""
+        """Get parameters for Google Search."""
         _params = {
-            "api_key": self.serpapi_api_key,
             "q": query,
         }
         params = {**self.params, **_params}
         return params
 
     @staticmethod
-    def _process_response(res: dict) -> str:
-        """Process response from SerpAPI."""
-        if "error" in res.keys():
-            raise ValueError(f"Got error from SerpAPI: {res['error']}")
-        if "answer_box" in res.keys() and type(res["answer_box"]) == list:
-            res["answer_box"] = res["answer_box"][0]
-        if "answer_box" in res.keys() and "answer" in res["answer_box"].keys():
-            toret = res["answer_box"]["answer"]
-        elif "answer_box" in res.keys() and "snippet" in res["answer_box"].keys():
-            toret = res["answer_box"]["snippet"]
-        elif (
-            "answer_box" in res.keys()
-            and "snippet_highlighted_words" in res["answer_box"].keys()
-        ):
-            toret = res["answer_box"]["snippet_highlighted_words"][0]
-        elif (
-            "sports_results" in res.keys()
-            and "game_spotlight" in res["sports_results"].keys()
-        ):
-            toret = res["sports_results"]["game_spotlight"]
-        elif (
-            "shopping_results" in res.keys()
-            and "title" in res["shopping_results"][0].keys()
-        ):
-            toret = res["shopping_results"][:3]
-        elif (
-            "knowledge_graph" in res.keys()
-            and "description" in res["knowledge_graph"].keys()
-        ):
-            toret = res["knowledge_graph"]["description"]
-        elif "snippet" in res["organic_results"][0].keys():
-            toret = res["organic_results"][0]["snippet"]
-        elif "link" in res["organic_results"][0].keys():
-            toret = res["organic_results"][0]["link"]
+    def _process_response(soup: BeautifulSoup) -> str:
+        """Process response from Google Search."""
+        results = soup.find_all('div', class_='g')
+        for result in results:
+            try:
+                title = result.find('h3').get_text()
+                link = result.find('a').get('href')
+                description = result.find('span', class_='st').get_text()
+                return {'title': title, 'link': link, 'description': description}
+            except AttributeError:
+                pass
+        return "No good search result found"
 
-        else:
-            toret = "No good search result found"
-        return toret

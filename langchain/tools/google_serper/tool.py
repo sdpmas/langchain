@@ -1,7 +1,8 @@
-"""Tool for the Serper.dev Google Search API."""
+"""Tool for the Google Search API."""
 
+import requests
 from typing import Optional
-
+from bs4 import BeautifulSoup
 from pydantic.fields import Field
 
 from langchain.callbacks.manager import (
@@ -9,11 +10,10 @@ from langchain.callbacks.manager import (
     CallbackManagerForToolRun,
 )
 from langchain.tools.base import BaseTool
-from langchain.utilities.google_serper import GoogleSerperAPIWrapper
 
 
 class GoogleSerperRun(BaseTool):
-    """Tool that adds the capability to query the Serper.dev Google search API."""
+    """Tool that adds the capability to query the Google search API."""
 
     name = "google_serper"
     description = (
@@ -21,7 +21,6 @@ class GoogleSerperRun(BaseTool):
         "Useful for when you need to answer questions about current events."
         "Input should be a search query."
     )
-    api_wrapper: GoogleSerperAPIWrapper
 
     def _run(
         self,
@@ -29,7 +28,7 @@ class GoogleSerperRun(BaseTool):
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Use the tool."""
-        return str(self.api_wrapper.run(query))
+        return str(self.search_google(query))
 
     async def _arun(
         self,
@@ -37,11 +36,18 @@ class GoogleSerperRun(BaseTool):
         run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
     ) -> str:
         """Use the tool asynchronously."""
-        return (await self.api_wrapper.arun(query)).__str__()
+        return str(self.search_google(query))
+
+    @staticmethod
+    def search_google(query: str) -> str:
+        """Send a GET request to Google Search and parse the results."""
+        response = requests.get(f"https://www.google.com/search?q={query}")
+        soup = BeautifulSoup(response.text, 'html.parser')
+        return soup.prettify()
 
 
 class GoogleSerperResults(BaseTool):
-    """Tool that has capability to query the Serper.dev Google Search API
+    """Tool that has capability to query the Google Search API
     and get back json."""
 
     name = "google_serrper_results_json"
@@ -50,7 +56,6 @@ class GoogleSerperResults(BaseTool):
         "Useful for when you need to answer questions about current events."
         "Input should be a search query. Output is a JSON object of the query results"
     )
-    api_wrapper: GoogleSerperAPIWrapper = Field(default_factory=GoogleSerperAPIWrapper)
 
     def _run(
         self,
@@ -58,7 +63,7 @@ class GoogleSerperResults(BaseTool):
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Use the tool."""
-        return str(self.api_wrapper.results(query))
+        return str(self.search_google(query))
 
     async def _arun(
         self,
@@ -66,5 +71,11 @@ class GoogleSerperResults(BaseTool):
         run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
     ) -> str:
         """Use the tool asynchronously."""
+        return str(self.search_google(query))
 
-        return (await self.api_wrapper.aresults(query)).__str__()
+    @staticmethod
+    def search_google(query: str) -> str:
+        """Send a GET request to Google Search and parse the results."""
+        response = requests.get(f"https://www.google.com/search?q={query}")
+        soup = BeautifulSoup(response.text, 'html.parser')
+        return soup.prettify()

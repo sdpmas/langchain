@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -137,14 +138,17 @@ class MongoDBAtlasVectorSearch(VectorStore):
         insert_result = self._collection.insert_many(to_insert)
         return insert_result.inserted_ids
 
-    def similarity_search_with_score(
-        self,
-        query: str,
-        *,
-        k: int = 4,
-        pre_filter: Optional[dict] = None,
-        post_filter_pipeline: Optional[List[Dict]] = None,
-    ) -> List[Tuple[Document, float]]:
+    def maximal_marginal_relevance(self):
+        """Implement Maximal Marginal Relevance algorithm for result diversification.
+        
+        TODO: Implement this method.
+        """
+        pass
+
+
+class MongoDBAtlasVectorSearch:
+
+    def similarity_search_with_score(self, query: str, *, k: int = 4, pre_filter: Optional[dict] = None, post_filter_pipeline: Optional[List[Dict]] = None) -> List[Tuple[Document, float]]:
         """Return MongoDB documents most similar to query, along with scores.
 
         Use the knnBeta Operator available in MongoDB Atlas Search
@@ -191,14 +195,7 @@ class MongoDBAtlasVectorSearch(VectorStore):
             docs.append((Document(page_content=text, metadata=res), score))
         return docs
 
-    def similarity_search(
-        self,
-        query: str,
-        k: int = 4,
-        pre_filter: Optional[dict] = None,
-        post_filter_pipeline: Optional[List[Dict]] = None,
-        **kwargs: Any,
-    ) -> List[Document]:
+    def similarity_search(self, query: str, k: int = 4, pre_filter: Optional[dict] = None, post_filter_pipeline: Optional[List[Dict]] = None, **kwargs: Any,) -> List[Document]:
         """Return MongoDB documents most similar to query.
 
         Use the knnBeta Operator available in MongoDB Atlas Search
@@ -228,14 +225,7 @@ class MongoDBAtlasVectorSearch(VectorStore):
         return [doc for doc, _ in docs_and_scores]
 
     @classmethod
-    def from_texts(
-        cls,
-        texts: List[str],
-        embedding: Embeddings,
-        metadatas: Optional[List[dict]] = None,
-        collection: Optional[Collection[MongoDBDocumentType]] = None,
-        **kwargs: Any,
-    ) -> MongoDBAtlasVectorSearch:
+    def from_texts(cls, texts: List[str], embedding: Embeddings, metadatas: Optional[List[dict]] = None, collection: Optional[Collection[MongoDBDocumentType]] = None, **kwargs: Any,) -> MongoDBAtlasVectorSearch:
         """Construct MongoDBAtlasVectorSearch wrapper from raw documents.
 
         This is a user-friendly interface that:
@@ -267,3 +257,7 @@ class MongoDBAtlasVectorSearch(VectorStore):
         vecstore = cls(collection, embedding, **kwargs)
         vecstore.add_texts(texts, metadatas=metadatas)
         return vecstore
+
+    def maximal_marginal_relevance(self):
+        # TODO: Implement the Maximal Marginal Relevance algorithm for result diversification
+        pass

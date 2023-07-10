@@ -1,5 +1,5 @@
 """Simple in memory docstore in the form of a dict."""
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, List
 
 from langchain.docstore.base import AddableMixin, Docstore
 from langchain.docstore.document import Document
@@ -25,3 +25,7 @@ class InMemoryDocstore(Docstore, AddableMixin):
             return f"ID {search} not found."
         else:
             return self._dict[search]
+
+    def batch_search(self, queries: List[str]) -> List[Union[str, Document]]:
+        """Search a batch of queries iteratively."""
+        return [self.search(query) for query in queries]

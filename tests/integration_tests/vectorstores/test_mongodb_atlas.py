@@ -119,3 +119,19 @@ class TestMongoDBAtlasVectorSearch:
             "Sandwich", k=1, pre_filter={"range": {"lte": 0, "path": "c"}}
         )
         assert output == []
+
+    def maximal_marginal_relevance(self, query, k=10, lambda_parameter=0.5):
+        """
+        Maximal Marginal Relevance (MMR) for diversity in search results.
+        MMR balances between relevance and diversity of the results.
+        """
+        # Get the initial ranking list (based on the relevance)
+        initial_ranking = self.similarity_search(query, k=k)
+
+        # Calculate the MMR score for each document
+        mmr_score = [(1-lambda_parameter)*doc.score - lambda_parameter*max([doc_sim for doc_sim in self.similarity_search(doc.page_content, k=k)]) for doc in initial_ranking]
+
+        # Sort the documents by MMR score in descending order
+        mmr_ranking = [doc for _,doc in sorted(zip(mmr_score, initial_ranking), reverse=True)]
+
+        return mmr_ranking

@@ -125,10 +125,25 @@ class MongoDBAtlasVectorSearch(VectorStore):
             result_ids.extend(self._insert_texts(texts_batch, metadatas_batch))
         return result_ids
 
-    def maximal_marginal_relevance(self):
-        # implement the MMR algorithm here
-        pass
+    def maximal_marginal_relevance(self, query: str, num_results: int) -> List[Document]:
+        # Get the similarity scores of the documents with respect to the query
+        similarity_scores = self.similarity_search_with_score(query, k=num_results)
 
+        # Initialize the list of selected documents with the most similar document
+        selected_documents = [similarity_scores[0][0]]
+
+        # Select the remaining documents
+        for _ in range(num_results - 1):
+            # Compute the similarity scores of the remaining documents with respect to the selected documents
+            remaining_similarity_scores = [
+                (doc, max(self._embedding.similarity(doc, selected_doc) for selected_doc in selected_documents))
+                for doc, _ in similarity_scores if doc not in selected_documents
+            ]
+
+            # Select the document that is most different from the selected documents
+            selected_documents.append(min(remaining_similarity_scores, key=lambda x: x[1])[0])
+
+        return selected_documents
 
     def _insert_texts(self, texts: List[str], metadatas: List[Dict[str, Any]]) -> List:
         if not texts:
@@ -272,4 +287,6 @@ class MongoDBAtlasVectorSearch(VectorStore):
             raise ValueError("Must provide 'collection' named parameter.")
         vecstore = cls(collection, embedding, **kwargs)
         vecstore.add_texts(texts, metadatas=metadatas)
+        return vecstore
+ts(texts, metadatas=metadatas)
         return vecstore

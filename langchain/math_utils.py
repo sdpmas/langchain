@@ -4,8 +4,11 @@ import numpy as np
 
 Matrix = Union[List[List[float]], List[np.ndarray], np.ndarray]
 
-
 def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
+    """
+    This function calculates the cosine similarity between two matrices X and Y.
+    It returns an empty array if either X or Y is empty.
+    """
     if len(X) == 0 or len(Y) == 0:
         return np.array([])
     X = np.array(X)

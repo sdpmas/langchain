@@ -1,6 +1,6 @@
 """Math utils."""
 from typing import List, Optional, Tuple, Union
-
+import math
 import numpy as np
 
 Matrix = Union[List[List[float]], List[np.ndarray], np.ndarray]
@@ -54,3 +54,15 @@ def cosine_similarity_top_k(
     ret_idxs = [(x // score_array.shape[1], x % score_array.shape[1]) for x in top_idxs]
     scores = score_array.flatten()[top_idxs].tolist()
     return ret_idxs, scores
+
+def euclidean_distance(point1: List[float], point2: List[float]) -> float:
+    """Calculate the Euclidean distance between two points in n-dimensional space.
+
+    Args:
+        point1: List of coordinates for the first point.
+        point2: List of coordinates for the second point.
+
+    Returns:
+        The Euclidean distance as a float.
+    """
+    return math.sqrt(sum((x - y) ** 2 for x, y in zip(point1, point2)))
